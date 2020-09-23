@@ -3,12 +3,29 @@ import apiKeys from '../apiKeys.json';
 
 const baseUrl = apiKeys.firebaseKeys.databaseURL;
 
+const getAllFarmers = () => new Promise((resolve, reject) => {
+  axios.get(`${baseUrl}/farmers.json`).then((response) => {
+    const demFarmers = response.data;
+    const farmers = [];
+    if (demFarmers) {
+      Object.keys(demFarmers).forEach((farmerId) => {
+        farmers.push(demFarmers[farmerId]);
+      });
+    }
+    resolve(farmers);
+  }).catch((error) => reject(error));
+});
+
 const checkIfFarmerExistsInFirebase = (farmer) => {
   axios
     .get(`${baseUrl}/farmers.json?orderBy="uid"&equalTo="${farmer.uid}"`)
     .then((resp) => {
       if (Object.values(resp.data).length === 0) {
-        axios.post(`${baseUrl}/farmers.json`, farmer);
+        axios.post(`${baseUrl}/farmers.json`, farmer)
+          .then((response) => {
+            const update = { firebaseKey: response.data.name };
+            axios.patch(`${baseUrl}/farmers/${response.data.name}.json`, update);
+          }).catch((error) => console.warn(error));
       } else {
         console.warn('User Already Exists');
       }
@@ -37,4 +54,4 @@ const setCurrentFarmer = (farmerObj) => {
   return farmer;
 };
 
-export default { setCurrentFarmer };
+export default { setCurrentFarmer, getAllFarmers };
